@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Dashboard de Facturación | Calidda</title>
+    <!-- Bootstrap 5 + Popper + Icons + Chart.js + Google Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f4f7fc;
+            font-family: 'Inter', sans-serif;
+        }
+        .dashboard-header {
+            background: linear-gradient(135deg, #003057, #006699);
+            color: white;
+            padding: 1.8rem 0;
+            border-radius: 0 0 25px 25px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .dashboard-header h1 {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .dashboard-header p {
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .filter-bar {
+            background: white;
+            border-radius: 20px;
+            padding: 1.2rem 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .global-kpi-card {
+            background: white;
+            border-radius: 24px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f6;
+        }
+        .global-kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        .kpi-icon {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1e2a3e;
+            line-height: 1.2;
+        }
+        .kpi-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #5a6e7c;
+        }
+        .kpi-full-amount {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+        .accordion-item {
+            border: none;
+            margin-bottom: 1.2rem;
+            background: transparent;
+        }
+        .accordion-button {
+            background: white;
+            border-radius: 20px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #1e2a3e;
+            border: 1px solid #eef2f6;
+            transition: all 0.2s;
+        }
+        .accordion-button:not(.collapsed) {
+            background: linear-gradient(95deg, #f8fafc, #ffffff);
+            color: #003057;
+            box-shadow: 0 6px 14px rgba(0,48,87,0.1);
+            border-bottom: 2px solid #006699;
+        }
+        .accordion-button:focus {
+            box-shadow: none;
+        }
+        .accordion-body {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            padding: 1.5rem;
+            margin-top: -0.5rem;
+            border: 1px solid #eef2f6;
+            border-top: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+        .autor-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 1rem 0.8rem;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid #f0f2f5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            height: 100%;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+        }
+        .kpi-card .kpi-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0.5rem 0 0.2rem;
+        }
+        .badge-custom {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+        .chart-container canvas {
+            max-height: 250px;
+            width: 100%;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #5a6e7c;
+            font-size: 0.85rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+        .bg-kpi-orders { background: linear-gradient(145deg, #eef2ff, #ffffff); border-left: 4px solid #3b82f6; }
+        .bg-kpi-invoices { background: linear-gradient(145deg, #e6f7e6, #ffffff); border-left: 4px solid #10b981; }
+        .bg-kpi-amount { background: linear-gradient(145deg, #fff9e6, #ffffff); border-left: 4px solid #f59e0b; }
+        .bg-kpi-time { background: linear-gradient(145deg, #fef2f2, #ffffff); border-left: 4px solid #ef4444; }
+        .global-kpi-row {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-header">
+    <div class="container">
+        <h1><i class="fas fa-chart-line me-2"></i> Dashboard de Facturación</h1>
+        <p class="lead mb-0">Análisis por asesor · Días hábiles · Cierre mensual (días 26 a fin de mes)</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="filter-bar">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label for="excelInput" class="form-label fw-bold"><i class="fas fa-file-excel me-1"></i> Cargar archivo Excel (.xlsx, .xls)</label>
+                <input type="file" id="excelInput" class="form-control" accept=".xlsx, .xls">
+                <small class="text-muted">Selecciona la base de facturación. Se actualizará todo el dashboard automáticamente.</small>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-info mt-2 mt-md-0" role="alert">
+                    <i class="fas fa-sync-alt"></i> <strong>Actualizable:</strong> Carga cualquier Excel con las mismas columnas y el dashboard se regenera.
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3" id="globalFilters" style="display: none;">
+            <div class="col-md-4">
+                <label class="fw-bold"><i class="fas fa-calendar-alt"></i> Rango de fechas (Creado el)</label>
+                <div class="d-flex gap-2">
+                    <input type="date" id="dateFrom" class="form-control">
+                    <input type="date" id="dateTo" class="form-control">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="fw-bold"><i class="fas fa-tag"></i> Categoría</label>
+                <select id="catFilter" class="form-select"><option value="TODAS">Todas</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="fw-bold"><i class="fas fa-file-invoice"></i> Clase documento ventas</label>
+                <select id="claseFilter" class="form-select"><option value="TODOS">Todos</option></select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetFilters" class="btn btn-outline-secondary w-100"><i class="fas fa-undo-alt"></i> Resetear</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardContainer">
+        <div class="loading text-center py-5">
+            <i class="fas fa-spinner fa-pulse fa-3x text-primary"></i>
+            <p class="mt-3">Cargando datos... Selecciona un archivo Excel.</p>
+        </div>
+    </div>
+    <footer>
+        <i class="fas fa-chart-line"></i> Dashboard dinámico · <strong>Coordinador:</strong> Antonio Pomalaza &nbsp;|&nbsp; <strong>Desarrollo:</strong> Gregory Vilchez
+    </footer>
+</div>
+
+<script>
+    let rawData = [];
+    let allCharts = {};
+    let currentData = [];
+    let columnMap = {};
+
+    // Mapeo de nombres
+    const nombreAsesor = {
+        "C_WDELACRUZ": "Wendy de la Cruz",
+        "C_JBARRETO": "JeanPierre Barreto",
+        "C_GVILCHEZ": "Gregory Vilchez",
+        "C_GQUISPER": "Gianella Quispe",
+        "C_MSALARZAR": "Mayra Salazar",
+        "C_MSALAZAR": "Mayra Salazar"
+    };
+    const asesorStyle = {
+        "C_WDELACRUZ": { color: "#17a2b8", icon: "fas fa-female" },
+        "C_JBARRETO": { color: "#28a745", icon: "fas fa-user-tie" },
+        "C_GVILCHEZ": { color: "#ffc107", icon: "fas fa-laptop-code" },
+        "C_GQUISPER": { color: "#fd7e14", icon: "fas fa-chalkboard-teacher" },
+        "C_MSALARZAR": { color: "#6f42c1", icon: "fas fa-user-astronaut" },
+        "C_MSALAZAR": { color: "#6f42c1", icon: "fas fa-user-astronaut" }
+    };
+    const defaultStyle = { color: "#004d73", icon: "fas fa-user-circle" };
+
+    function getNombreAsesor(usuario) { return nombreAsesor[usuario] || usuario; }
+    function getAsesorStyle(usuario) { return asesorStyle[usuario] || defaultStyle; }
+
+    // Formato de moneda completo (para tooltips y detalle)
+    function formatMoneyFull(amount) {
+        return "S/ " + amount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    // Formato compacto (K, M)
+    function formatCompactMoney(amount) {
+        if (amount >= 1_000_000) {
+            return "S/ " + (amount / 1_000_000).toFixed(1) + "M";
+        } else if (amount >= 1_000) {
+            return "S/ " + (amount / 1_000).toFixed(1) + "K";
+        } else {
+            return formatMoneyFull(amount);
+        }
+    }
+
+    // === Funciones de fechas ===
+    function excelDateToJSDate(serial) {
+        const utc_days = Math.floor(serial - 25569);
+        return new Date(utc_days * 86400 * 1000);
+    }
+    function parseDate(value) {
+        if (!value || value === "") return null;
+        if (typeof value === 'number') {
+            try { return excelDateToJSDate(value); } catch(e) { return null; }
+        }
+        let d = new Date(value);
+        if (!isNaN(d.getTime())) return d;
+        let parts = value.split(/[-/]/);
+        if (parts.length === 3) {
+            let day = parseInt(parts[0]), month = parseInt(parts[1])-1, year = parseInt(parts[2]);
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                d = new Date(year, month, day);
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+        return null;
+    }
+    function isWeekend(date) { return date.getDay() === 0 || date.getDay() === 6; }
+    function addBusinessDays(date, days) {
+        let result = new Date(date);
+        let added = 0;
+        while (added < days) {
+            result.setDate(result.getDate() + 1);
+            if (!isWeekend(result)) added++;
+        }
+        return result;
+    }
+    function getFirstDayOfNextMonth(date) { return new Date(date.getFullYear(), date.getMonth() + 1, 1); }
+    function isInClosingPeriod(date) {
+        const day = date.getDate();
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+        return day >= 26 && day <= lastDay;
+    }
+    function isInvoiceOnTime(creado, fechaFactura) {
+        if (!creado || !fechaFactura) return false;
+        let startDate = isInClosingPeriod(creado) ? getFirstDayOfNextMonth(creado) : new Date(creado);
+        const deadline = addBusinessDays(startDate, 2);
+        const facturaDate = new Date(fechaFactura.getFullYear(), fechaFactura.getMonth(), fechaFactura.getDate());
+        const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+        return facturaDate <= deadlineDate;
+    }
+
+    // === Detección de columnas ===
+    function detectColumns(headers) {
+        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const patterns = {
+            autor: ["autor", "asesor", "creado por"],
+            docVenta: ["documento de ventas", "doc venta", "pedido"],
+            numFactura: ["numero recibo", "num recibo", "fac electronica", "factura electrónica", "numero factura"],
+            totalIGV: ["total con igv", "total igv", "igv", "monto total"],
+            creadoEl: ["creado el", "fecha creación", "fecha creacion"],
+            fechaFactura: ["fecha de factura", "fecha factura", "factura fecha"],
+            categoria: ["categoria cuenta contrato", "categoria", "tipo cuenta"],
+            claseDoc: ["clase doc.ventas", "clase documento", "tipo doc"],
+            descripcion: ["descripcion material", "descripción", "material"]
+        };
+        let result = {};
+        for (let [key, patternsList] of Object.entries(patterns)) {
+            let found = null;
+            for (let h of headers) {
+                let normH = normalize(h);
+                for (let p of patternsList) {
+                    if (normH.includes(p)) { found = h; break; }
+                }
+                if (found) break;
+            }
+            result[key] = found;
+        }
+        return result;
+    }
+
+    function processData(rows, headers) {
+        const map = detectColumns(headers);
+        columnMap = map;
+        let data = [];
+        for (let row of rows) {
+            let autor = map.autor ? (row[map.autor] || "SIN ASIGNAR") : "SIN ASIGNAR";
+            let docVenta = map.docVenta ? (row[map.docVenta] ? row[map.docVenta].toString() : "") : "";
+            let numFactura = map.numFactura ? (row[map.numFactura] ? row[map.numFactura].toString() : "") : "";
+            let totalIGV = parseFloat(row[map.totalIGV]);
+            if (isNaN(totalIGV)) totalIGV = 0;
+            let creado = parseDate(row[map.creadoEl]);
+            let fechaFact = parseDate(row[map.fechaFactura]);
+            let categoria = map.categoria ? (row[map.categoria] || "OTROS") : "OTROS";
+            let claseDoc = map.claseDoc ? (row[map.claseDoc] || "SIN CLASE") : "SIN CLASE";
+            let descripcion = map.descripcion ? (row[map.descripcion] || "") : "";
+            data.push({ autor, docVenta, numFactura, totalIGV, creado, fechaFact, categoria, claseDoc, descripcion });
+        }
+        return data;
+    }
+
+    function populateFilters(data) {
+        let categorias = new Set(), clases = new Set();
+        data.forEach(d => { if (d.categoria) categorias.add(d.categoria); if (d.claseDoc) clases.add(d.claseDoc); });
+        let catSelect = document.getElementById('catFilter');
+        catSelect.innerHTML = '<option value="TODAS">Todas</option>';
+        [...categorias].sort().forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
+        let claseSelect = document.getElementById('claseFilter');
+        claseSelect.innerHTML = '<option value="TODOS">Todos</option>';
+        [...clases].sort().forEach(c => claseSelect.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+
+    function applyFilters(data, dateFrom, dateTo, categoria, claseDoc) {
+        return data.filter(d => {
+            if (dateFrom && d.creado) { let fromDate = new Date(dateFrom); fromDate.setHours(0,0,0,0); if (d.creado < fromDate) return false; }
+            if (dateTo && d.creado) { let toDate = new Date(dateTo); toDate.setHours(23,59,59,999); if (d.creado > toDate) return false; }
+            if (categoria !== "TODAS" && d.categoria !== categoria) return false;
+            if (claseDoc !== "TODOS" && d.claseDoc !== claseDoc) return false;
+            return true;
+        });
+    }
+
+    function destroyCharts(prefix) {
+        for (let key in allCharts) {
+            if (key.startsWith(prefix) && allCharts[key] && typeof allCharts[key].destroy === 'function') {
+                allCharts[key].destroy();
+                delete allCharts[key];
+            }
+        }
+    }
+
+    // Render principal con formato compacto
+    function renderDashboard(filteredData) {
+        const container = document.getElementById('dashboardContainer');
+        if (!filteredData.length) {
+            container.innerHTML = `<div class="alert alert-warning shadow-sm">No hay datos con los filtros seleccionados.</div>`;
+            return;
+        }
+
+        // KPIs globales
+        let globalUniqueOrders = new Set(), globalUniqueInvoices = new Set();
+        let globalTotalFacturado = 0, globalOnTime = 0, globalTotalWithDates = 0;
+        filteredData.forEach(r => {
+            if (r.docVenta) globalUniqueOrders.add(r.docVenta);
+            if (r.numFactura && r.numFactura.trim() !== "") globalUniqueInvoices.add(r.numFactura);
+            globalTotalFacturado += r.totalIGV;
+            if (r.creado && r.fechaFact) {
+                if (isInvoiceOnTime(r.creado, r.fechaFact)) globalOnTime++;
+                globalTotalWithDates++;
+            }
+        });
+        let globalPctOnTime = globalTotalWithDates > 0 ? (globalOnTime / globalTotalWithDates * 100).toFixed(1) : 0;
+
+        let html = `
+            <div class="row g-4 global-kpi-row">
+                <div class="col-md-3">
+                    <div class="global-kpi-card bg-kpi-orders">
+                        <div class="kpi-icon text-primary"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="kpi-value">${globalUniqueOrders.size}</div>
+                        <div class="kpi-label">Pedidos únicos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="global-kpi-card bg-kpi-invoices">
+                        <div class="kpi-icon text-success"><i class="fas fa-file-invoice-dollar"></i></div>
+                        <div class="kpi-value">${globalUniqueInvoices.size}</div>
+                        <div class="kpi-label">Facturas únicas</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="global-kpi-card bg-kpi-amount">
+                        <div class="kpi-icon text-warning"><i class="fas fa-coins"></i></div>
+                        <div class="kpi-value">${formatCompactMoney(globalTotalFacturado)}</div>
+                        <div class="kpi-full-amount">${formatMoneyFull(globalTotalFacturado)}</div>
+                        <div class="kpi-label">Total facturado</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="global-kpi-card bg-kpi-time">
+                        <div class="kpi-icon ${globalPctOnTime >= 80 ? 'text-success' : (globalPctOnTime >= 50 ? 'text-warning' : 'text-danger')}"><i class="fas fa-clock"></i></div>
+                        <div class="kpi-value">${globalOnTime} / ${globalTotalWithDates}</div>
+                        <div class="kpi-label">Facturación a tiempo <span class="badge ${globalPctOnTime >= 80 ? 'bg-success' : (globalPctOnTime >= 50 ? 'bg-warning' : 'bg-danger')} ms-1">${globalPctOnTime}%</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion" id="accordionAsesores">
+        `;
+
+        // Agrupar por autor
+        let grouped = new Map();
+        filteredData.forEach(d => { if (!grouped.has(d.autor)) grouped.set(d.autor, []); grouped.get(d.autor).push(d); });
+
+        let autorIndex = 0;
+        for (let [autor, rows] of grouped.entries()) {
+            const autorId = `autor_${autorIndex}`;
+            const nombre = getNombreAsesor(autor);
+            const style = getAsesorStyle(autor);
+            const icon = style.icon;
+            const bgColor = style.color;
+
+            let onTimeCount = 0, totalWithDates = 0;
+            rows.forEach(r => {
+                if (r.creado && r.fechaFact) {
+                    if (isInvoiceOnTime(r.creado, r.fechaFact)) onTimeCount++;
+                    totalWithDates++;
+                }
+            });
+            let pctOnTime = totalWithDates > 0 ? (onTimeCount / totalWithDates * 100) : 0;
+            let borderAccent = pctOnTime >= 80 ? '#10b981' : (pctOnTime >= 50 ? '#f59e0b' : '#ef4444');
+
+            html += `
+                <div class="accordion-item" style="border-left: 4px solid ${borderAccent}; border-radius: 20px; margin-bottom: 1rem;">
+                    <h2 class="accordion-header" id="heading${autorIndex}">
+                        <button class="accordion-button ${autorIndex !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${autorIndex}" aria-expanded="${autorIndex === 0 ? 'true' : 'false'}" aria-controls="collapse${autorIndex}">
+                            <span class="autor-icon" style="background: ${bgColor};"><i class="${icon}"></i></span>
+                            ${nombre} <span class="badge bg-secondary ms-2">${rows.length} registros</span>
+                        </button>
+                    </h2>
+                    <div id="collapse${autorIndex}" class="accordion-collapse collapse ${autorIndex === 0 ? 'show' : ''}" aria-labelledby="heading${autorIndex}" data-bs-parent="#accordionAsesores">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="kpi-card">
+                                        <i class="fas fa-shopping-cart fa-2x text-primary"></i>
+                                        <div class="kpi-number" id="${autorId}_pedidos">-</div>
+                                        <small class="text-muted">Pedidos de venta</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="kpi-card">
+                                        <i class="fas fa-file-invoice-dollar fa-2x text-success"></i>
+                                        <div class="kpi-number" id="${autorId}_facturas">-</div>
+                                        <small class="text-muted">Facturas emitidas</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="kpi-card">
+                                        <i class="fas fa-coins fa-2x text-warning"></i>
+                                        <div class="kpi-number" id="${autorId}_total">-</div>
+                                        <div class="kpi-full-amount" id="${autorId}_total_full">-</div>
+                                        <small class="text-muted">Total facturado</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="kpi-card" id="${autorId}_semaphore">
+                                        <i class="fas fa-clock fa-2x"></i>
+                                        <div class="kpi-number">-</div>
+                                        <small>Facturación a tiempo</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="chart-container"><canvas id="${autorId}_chartOrdersInvoices"></canvas></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="chart-container"><canvas id="${autorId}_chartTopProducts"></canvas></div>
+                                </div>
+                                <div class="col-md-12 mt-3">
+                                    <div class="chart-container" style="height: 220px;"><canvas id="${autorId}_chartMonthlyTrend"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            autorIndex++;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+
+        document.querySelectorAll('.accordion-collapse').forEach(item => { new bootstrap.Collapse(item, { toggle: false }); });
+
+        autorIndex = 0;
+        for (let [autor, rows] of grouped.entries()) {
+            const autorId = `autor_${autorIndex}`;
+            let uniqueOrders = new Set(), uniqueInvoices = new Set();
+            let totalFacturado = 0, onTimeCount = 0, totalWithDates = 0;
+            rows.forEach(r => {
+                if (r.docVenta) uniqueOrders.add(r.docVenta);
+                if (r.numFactura && r.numFactura.trim() !== "") uniqueInvoices.add(r.numFactura);
+                totalFacturado += r.totalIGV;
+                if (r.creado && r.fechaFact) {
+                    if (isInvoiceOnTime(r.creado, r.fechaFact)) onTimeCount++;
+                    totalWithDates++;
+                }
+            });
+            let pctOnTime = totalWithDates > 0 ? (onTimeCount / totalWithDates * 100).toFixed(1) : 0;
+            document.getElementById(`${autorId}_pedidos`).innerText = uniqueOrders.size;
+            document.getElementById(`${autorId}_facturas`).innerText = uniqueInvoices.size;
+            document.getElementById(`${autorId}_total`).innerHTML = formatCompactMoney(totalFacturado);
+            document.getElementById(`${autorId}_total_full`).innerHTML = formatMoneyFull(totalFacturado);
+            let semaforo = document.getElementById(`${autorId}_semaphore`);
+            let colorIcon = pctOnTime >= 80 ? '#28a745' : (pctOnTime >= 50 ? '#ffc107' : '#dc3545');
+            semaforo.innerHTML = `<i class="fas fa-clock fa-2x" style="color:${colorIcon}"></i><div class="kpi-number">${onTimeCount} / ${totalWithDates}</div><span class="badge ${pctOnTime >= 80 ? 'bg-success' : (pctOnTime >= 50 ? 'bg-warning' : 'bg-danger')} mt-1">${pctOnTime}%</span><small class="d-block mt-2">Facturación a tiempo</small>`;
+
+            // Gráficos
+            let ctx1 = document.getElementById(`${autorId}_chartOrdersInvoices`).getContext('2d');
+            allCharts[`${autorId}_ordersInv`] = new Chart(ctx1, {
+                type: 'bar', data: { labels: ['Pedidos', 'Facturas'], datasets: [{ label: 'Cantidad', data: [uniqueOrders.size, uniqueInvoices.size], backgroundColor: ['#3b82f6', '#10b981'] }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+            });
+
+            let productRevenue = new Map();
+            rows.forEach(r => { let prod = r.descripcion || "Sin descripción"; productRevenue.set(prod, (productRevenue.get(prod) || 0) + r.totalIGV); });
+            let sortedProducts = [...productRevenue.entries()].sort((a,b) => b[1]-a[1]).slice(0,5);
+            let ctx2 = document.getElementById(`${autorId}_chartTopProducts`).getContext('2d');
+            allCharts[`${autorId}_topProd`] = new Chart(ctx2, {
+                type: 'bar', data: { labels: sortedProducts.map(p => p[0].length > 20 ? p[0].substring(0,18)+'…' : p[0]), datasets: [{ label: 'Monto (S/)', data: sortedProducts.map(p => p[1]), backgroundColor: '#f59e0b' }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => formatMoneyFull(ctx.raw) } } } }
+            });
+
+            let monthly = new Map();
+            rows.forEach(r => { if (r.fechaFact) { let ym = `${r.fechaFact.getFullYear()}-${(r.fechaFact.getMonth()+1).toString().padStart(2,'0')}`; monthly.set(ym, (monthly.get(ym) || 0) + r.totalIGV); } });
+            let sortedMonths = [...monthly.keys()].sort();
+            let ctx3 = document.getElementById(`${autorId}_chartMonthlyTrend`).getContext('2d');
+            allCharts[`${autorId}_month`] = new Chart(ctx3, {
+                type: 'line', data: { labels: sortedMonths, datasets: [{ label: 'Facturación mensual', data: sortedMonths.map(m => monthly.get(m)), borderColor: '#003057', backgroundColor: 'rgba(0,48,87,0.05)', fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => formatMoneyFull(ctx.raw) } } } }
+            });
+            autorIndex++;
+        }
+    }
+
+    function loadAndRender(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+            if (rows.length === 0) {
+                document.getElementById('dashboardContainer').innerHTML = '<div class="alert alert-danger">El archivo no tiene datos.</div>';
+                return;
+            }
+            const headers = Object.keys(rows[0]);
+            rawData = processData(rows, headers);
+            document.getElementById('globalFilters').style.display = 'flex';
+            populateFilters(rawData);
+            applyFiltersAndRender();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function applyFiltersAndRender() {
+        if (!rawData.length) return;
+        let dateFrom = document.getElementById('dateFrom').value;
+        let dateTo = document.getElementById('dateTo').value;
+        let categoria = document.getElementById('catFilter').value;
+        let claseDoc = document.getElementById('claseFilter').value;
+        let filtered = applyFilters(rawData, dateFrom, dateTo, categoria, claseDoc);
+        currentData = filtered;
+        destroyCharts('autor_');
+        renderDashboard(filtered);
+    }
+
+    document.getElementById('excelInput').addEventListener('change', e => { if (e.target.files[0]) loadAndRender(e.target.files[0]); });
+    document.getElementById('dateFrom').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('dateTo').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('catFilter').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('claseFilter').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('resetFilters').addEventListener('click', () => {
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        document.getElementById('catFilter').value = 'TODAS';
+        document.getElementById('claseFilter').value = 'TODOS';
+        applyFiltersAndRender();
+    });
+</script>
+</body>
+</html>
